@@ -88,10 +88,25 @@ The project consists of the following microservices:
 | API Gateway | http://localhost:8080 | API Gateway entry point |
 | Product Service (GraphQL) | http://localhost:8081/graphql | GraphQL API endpoint |
 | Product Service (GraphiQL) | http://localhost:8081/graphiql | GraphQL interactive UI |
-| Product Service (UI) | http://localhost:8081 | Product web UI |
+| Product Service (H2 Console) | http://localhost:8081/h2-console | Database management console |
 | User Service | http://localhost:8082/api/auth | Authentication endpoints |
+| User Service (H2 Console) | http://localhost:8082/h2-console | User database console |
 | Kafka UI | http://localhost:8083/kafka-ui | Kafka event monitoring dashboard |
 | Eureka Dashboard | http://localhost:8761 | Service discovery dashboard |
+
+### H2 Console Access
+
+To access the H2 database consoles in the containerized environment:
+
+- **Product Service H2 Console**: http://localhost:8081/h2-console
+  - JDBC URL: `jdbc:h2:mem:productdb`
+  - Username: `sa`
+  - Password: `password`
+
+- **User Service H2 Console**: http://localhost:8082/h2-console
+  - JDBC URL: `jdbc:h2:mem:userdb`
+  - Username: `sa`
+  - Password: `password`
 
 ## GraphQL API Usage
 
@@ -233,40 +248,79 @@ spring-boot-graphql-demo/
 
 ## Key Implementation Details
 
-### GraphQL Implementation
+### GraphQL Implementation (Java Development Skills)
 
 - **Schema-first approach** with `.graphqls` files
 - **DataFetchers/Resolvers** using Spring's `@SchemaMapping`, `@QueryMapping`, etc.
 - **N+1 problem** addressed with DataLoaders for related entities
 - **Subscription support** using WebSocket
 - **Error handling** with GraphQL-specific error responses
+- **Comprehensive exception handling** with custom error responses
 
-### Microservices Architecture
+### Microservices Architecture (System Design Skills)
 
-- **Service discovery** with Eureka
-- **API Gateway** with Spring Cloud Gateway
-- **Circuit breakers** for resilience
-- **Distributed configuration**
+- **Service discovery** with Eureka for dynamic service registration
+- **API Gateway** with Spring Cloud Gateway for centralized routing
+- **Circuit breakers** for fault tolerance and resilience
+- **Distributed configuration** with environment-specific profiles
+- **Service-to-service communication** with REST and messaging
+- **Containerized deployment** with Docker and Docker Compose
 
-### Kafka Integration
+### Kafka Integration (Streaming Data Skills)
 
-- **Event publishing** from services
-- **Event consumption** with Spring Kafka listeners
-- **Real-time UI** for Kafka event monitoring
+- **Event publishing** from services with conditional execution
+- **Event consumption** with Spring Kafka listeners and error handling
+- **Message schema design** with JSON serialization/deserialization
+- **Real-time event processing** with consumer groups
+- **Resilient error handling** with dead-letter topics and retry mechanisms
+- **Scalable architecture** for high-throughput event processing
+
+### DevOps and Containerization
+
+- **Docker multi-stage builds** for optimized container images
+- **Container orchestration** with Docker Compose
+- **Environment-specific configurations** for development and production
+- **Network configuration** for inter-service communication
+- **Resource optimization** for containerized services
+- **Security considerations** for containerized applications
 
 ## Security Implementation
 
 - **JWT authentication** with Spring Security
 - **Role-based access control** for GraphQL operations
 - **Method-level security** with `@PreAuthorize`
+- **Cross-Origin Resource Sharing (CORS)** configuration
+- **Content Security Policy** implementation
+- **Header security** with protection against XSS and CSRF attacks
 
 ## Production Considerations
 
-For a production environment, consider:
+This demo showcases several enterprise-ready patterns, but for a full production environment, consider these additional enhancements:
 
-1. **Persistent databases** instead of H2
-2. **Distributed configuration** with Spring Cloud Config
-3. **Resilience patterns** with Spring Cloud Circuit Breaker
-4. **Monitoring and tracing** with Spring Boot Actuator, Prometheus, and Zipkin
-5. **Kafka cluster** with multiple brokers for high availability
-6. **CI/CD pipeline** for automated testing and deployment
+### High Availability & Scalability
+1. **Database Clustering**: Replace H2 with PostgreSQL/MySQL clusters
+2. **Kafka Cluster**: Configure multi-broker Kafka deployment with replication
+3. **Service Redundancy**: Deploy multiple instances of each microservice
+4. **Load Balancing**: Implement server-side load balancing with Ribbon/Spring Cloud LoadBalancer
+5. **Autoscaling**: Configure Kubernetes horizontal pod autoscaling based on metrics
+
+### Observability & Monitoring
+1. **Distributed Tracing**: Implement with Spring Cloud Sleuth and Zipkin
+2. **Metrics Collection**: Use Micrometer with Prometheus for detailed metrics
+3. **Centralized Logging**: Configure ELK stack (Elasticsearch, Logstash, Kibana)
+4. **Health Monitoring**: Enhanced actuator endpoints with custom health indicators
+5. **Alerting**: Configure alerts based on predefined thresholds
+
+### Security Enhancements
+1. **API Rate Limiting**: Implement throttling to prevent abuse
+2. **Advanced Authentication**: Add OAuth2/OpenID Connect with external providers
+3. **Secrets Management**: Use Vault or Kubernetes secrets for sensitive data
+4. **Security Scanning**: Integrate dependency vulnerability scanning
+5. **Compliance Validation**: Implement data protection measures (GDPR, etc.)
+
+### DevOps & CI/CD
+1. **Infrastructure as Code**: Define all infrastructure with Terraform/CloudFormation
+2. **CI/CD Pipeline**: Implement with GitHub Actions, Jenkins, or GitLab CI
+3. **Blue/Green Deployments**: Zero-downtime deployment strategy
+4. **Automated Testing**: Comprehensive unit, integration, and performance tests
+5. **Environment Parity**: Consistent configurations across development, staging, and production
