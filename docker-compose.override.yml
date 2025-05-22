@@ -1,0 +1,33 @@
+# Override configuration for testing and development
+services:
+  # Disable Kafka in the services during initial startup to resolve build issues
+  product-service:
+    environment:
+      - SPRING_KAFKA_ENABLED=false
+      
+  kafka-service:
+    environment:
+      - SPRING_KAFKA_ENABLED=false
+
+  # Gateway service configuration
+  gateway-service:
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_CLOUD_GATEWAY=DEBUG
+      - LOGGING_LEVEL_ROOT=INFO
+    ports:
+      - "8080:8080"
+    depends_on:
+      - discovery-service
+      - user-service
+      - product-service
+
+  # User service configuration with enhanced H2 console settings
+  user-service:
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_H2_CONSOLE_SETTINGS_WEB-ALLOW-OTHERS=true
+      - LOGGING_LEVEL_COM_EXAMPLE_USERSERVICE=DEBUG
+      - SPRING_JPA_SHOW_SQL=true
+    ports:
+      - "8082:8082"

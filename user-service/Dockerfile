@@ -1,18 +1,21 @@
 FROM eclipse-temurin:17-jdk as build
-WORKDIR /workspace/app
 
-COPY mvnw .
-COPY .mvn .mvn
+# Set the working directory
+WORKDIR /app
+
+# Copy the Maven project file
 COPY pom.xml .
-COPY src src
+COPY src ./src
+COPY parent-pom.xml ../pom.xml
 
-RUN ./mvnw package -DskipTests
-RUN mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)
+# Download dependencies and build
+RUN apt-get update && apt-get install -y maven
+RUN mvn package -DskipTests
 
+# Runtime stage
 FROM eclipse-temurin:17-jre
-VOLUME /tmp
-ARG DEPENDENCY=/workspace/app/target/dependency
-COPY --from=build ${DEPENDENCY}/BOOT-INF/lib /app/lib
-COPY --from=build ${DEPENDENCY}/META-INF /app/META-INF
-COPY --from=build ${DEPENDENCY}/BOOT-INF/classes /app
-ENTRYPOINT ["java","-cp","app:app/lib/*","com.example.userservice.UserServiceApplication"]
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
+
+# Run the application with docker profile and additional H2 console settings
+ENTRYPOINT ["java", "-jar", "-Dspring.profiles.active=docker", "-Dspring.h2.console.settings.web-allow-others=true", "-Dspring.h2.console.settings.trace=true", "app.jar"]

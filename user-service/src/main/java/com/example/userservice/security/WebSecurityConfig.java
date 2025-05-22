@@ -65,7 +65,17 @@ public class WebSecurityConfig {
                     .anyRequest().authenticated()
             );
         
+        // These configurations are critical for H2 console to work properly
         http.headers(headers -> headers.frameOptions().disable());
+        http.csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"));
+        
+        // Allow H2 console to be displayed in frames
+        http.headers(headers -> {
+            headers.frameOptions().sameOrigin();
+            headers.xssProtection().disable();
+            headers.contentSecurityPolicy(csp -> csp.policyDirectives("frame-ancestors 'self'"));
+        });
+        
         http.authenticationProvider(authenticationProvider());
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
         

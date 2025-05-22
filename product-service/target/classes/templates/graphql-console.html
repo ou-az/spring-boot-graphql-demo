@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GraphQL Console - Spring Boot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-top: 5rem;
+        }
+        .query-container {
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            height: calc(100vh - 140px);
+            display: flex;
+            flex-direction: column;
+        }
+        .query-editor, .query-result {
+            width: 100%;
+            height: 300px;
+            border: 1px solid #ced4da;
+            border-radius: 3px;
+            font-family: monospace;
+            padding: 10px;
+            resize: none;
+            background-color: #f8f9fa;
+        }
+        .example-queries {
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 3px;
+            margin-bottom: 10px;
+        }
+        pre {
+            margin: 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">Spring Boot GraphQL Demo</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarCollapse">
+                <ul class="navbar-nav me-auto mb-2 mb-md-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/graphql-console">GraphQL Console</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/graphiql">GraphiQL</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/h2-console">H2 Console</a>
+                    </li>
+                </ul>
+                <div class="d-flex">
+                    <span class="navbar-text me-3" sec:authorize="isAuthenticated()">
+                        Welcome, <span sec:authentication="name"></span>
+                    </span>
+                    <form th:action="@{/logout}" method="post" sec:authorize="isAuthenticated()">
+                        <button type="submit" class="btn btn-outline-light">Logout</button>
+                    </form>
+                    <a class="btn btn-outline-light" href="/login" sec:authorize="!isAuthenticated()">Login</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <h1 class="mb-4">GraphQL Console</h1>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        Example Queries
+                    </div>
+                    <div class="card-body">
+                        <div class="example-queries">
+                            <h6>Query all products</h6>
+                            <pre>query {
+  products {
+    id
+    name
+    price
+    stockQuantity
+    category {
+      name
+    }
+  }
+}</pre>
+                        </div>
+
+                        <div class="example-queries">
+                            <h6>Query a single product</h6>
+                            <pre>query {
+  product(id: "1") {
+    id
+    name
+    description
+    price
+    stockQuantity
+    category {
+      name
+    }
+    createdAt
+  }
+}</pre>
+                        </div>
+
+                        <div th:if="${isAdmin}" class="example-queries">
+                            <h6>Create a product (Admin only)</h6>
+                            <pre>mutation {
+  createProduct(input: {
+    name: "New Product"
+    description: "This is a new product"
+    price: 29.99
+    stockQuantity: 50
+    categoryId: "1"
+  }) {
+    id
+    name
+    price
+  }
+}</pre>
+                        </div>
+
+                        <div th:if="${isAdmin}" class="example-queries">
+                            <h6>Update a product (Admin only)</h6>
+                            <pre>mutation {
+  updateProduct(
+    id: "1", 
+    input: {
+      name: "Updated Product"
+      price: 39.99
+      stockQuantity: 100
+      categoryId: "1"
+    }
+  ) {
+    id
+    name
+    price
+  }
+}</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        Try It Out
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="queryInput" class="form-label">GraphQL Query</label>
+                            <textarea id="queryInput" class="query-editor"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <button id="executeQuery" class="btn btn-primary">Execute Query</button>
+                        </div>
+                        <div class="mb-3">
+                            <label for="queryResult" class="form-label">Result</label>
+                            <textarea id="queryResult" class="query-result" readonly></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const queryInput = document.getElementById('queryInput');
+            const queryResult = document.getElementById('queryResult');
+            const executeButton = document.getElementById('executeQuery');
+            
+            // Set a default query
+            queryInput.value = 'query {\n  products {\n    id\n    name\n    price\n  }\n}';
+            
+            // Handle query execution
+            executeButton.addEventListener('click', async () => {
+                try {
+                    queryResult.value = 'Loading...';
+                    
+                    const response = await fetch('/graphql', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            query: queryInput.value
+                        }),
+                        credentials: 'include'
+                    });
+                    
+                    const result = await response.json();
+                    queryResult.value = JSON.stringify(result, null, 2);
+                } catch (error) {
+                    queryResult.value = 'Error: ' + error.message;
+                }
+            });
+            
+            // Allow loading example queries
+            const examples = document.querySelectorAll('.example-queries pre');
+            examples.forEach(example => {
+                example.style.cursor = 'pointer';
+                example.title = 'Click to load this query';
+                example.addEventListener('click', () => {
+                    queryInput.value = example.textContent;
+                });
+            });
+        });
+    </script>
+</body>
+</html>

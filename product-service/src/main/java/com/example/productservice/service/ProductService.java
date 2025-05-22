@@ -8,6 +8,7 @@ import com.example.productservice.repository.CategoryRepository;
 import com.example.productservice.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,9 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final KafkaTemplate<String, ProductEvent> kafkaTemplate;
+    
+    @Value("${spring.kafka.enabled:true}")
+    private boolean kafkaEnabled;
     
     // Sink for GraphQL Subscriptions
     private final Sinks.Many<Product> productCreatedSink = Sinks.many().multicast().onBackpressureBuffer();
@@ -70,10 +74,14 @@ public class ProductService {
         
         Product savedProduct = productRepository.save(product);
         
-        // Send Kafka event
-        ProductEvent event = new ProductEvent("CREATED", savedProduct.getId());
-        kafkaTemplate.send(PRODUCT_TOPIC, event);
-        log.info("Sent product created event for product id: {}", savedProduct.getId());
+        // Send Kafka event if enabled
+        if (kafkaEnabled) {
+            ProductEvent event = new ProductEvent("CREATED", savedProduct.getId());
+            kafkaTemplate.send(PRODUCT_TOPIC, event);
+            log.info("Sent product created event for product id: {}", savedProduct.getId());
+        } else {
+            log.info("Kafka disabled: Skipping product created event for product id: {}", savedProduct.getId());
+        }
         
         // Emit for GraphQL subscriptions
         productCreatedSink.tryEmitNext(savedProduct);
@@ -102,10 +110,14 @@ public class ProductService {
         
         Product updatedProduct = productRepository.save(product);
         
-        // Send Kafka event
-        ProductEvent event = new ProductEvent("UPDATED", updatedProduct.getId());
-        kafkaTemplate.send(PRODUCT_TOPIC, event);
-        log.info("Sent product updated event for product id: {}", updatedProduct.getId());
+        // Send Kafka event if enabled
+        if (kafkaEnabled) {
+            ProductEvent event = new ProductEvent("UPDATED", updatedProduct.getId());
+            kafkaTemplate.send(PRODUCT_TOPIC, event);
+            log.info("Sent product updated event for product id: {}", updatedProduct.getId());
+        } else {
+            log.info("Kafka disabled: Skipping product updated event for product id: {}", updatedProduct.getId());
+        }
         
         // Emit for GraphQL subscriptions
         productUpdatedSink.tryEmitNext(updatedProduct);
@@ -122,10 +134,14 @@ public class ProductService {
         
         productRepository.deleteById(id);
         
-        // Send Kafka event
-        ProductEvent event = new ProductEvent("DELETED", id);
-        kafkaTemplate.send(PRODUCT_TOPIC, event);
-        log.info("Sent product deleted event for product id: {}", id);
+        // Send Kafka event if enabled
+        if (kafkaEnabled) {
+            ProductEvent event = new ProductEvent("DELETED", id);
+            kafkaTemplate.send(PRODUCT_TOPIC, event);
+            log.info("Sent product deleted event for product id: {}", id);
+        } else {
+            log.info("Kafka disabled: Skipping product deleted event for product id: {}", id);
+        }
         
         return true;
     }

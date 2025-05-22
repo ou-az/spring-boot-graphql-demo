@@ -1,0 +1,84 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway-service
+  cloud:
+    gateway:
+      routes:
+        # Product Service Routes
+        - id: product-service
+          uri: lb://product-service
+          predicates:
+            - Path=/api/products/**, /graphql/product/**, /graphiql/product/**
+          filters:
+            - RewritePath=/graphql/product/(?<path>.*), /graphql/$\{path}
+            - RewritePath=/graphiql/product/(?<path>.*), /graphiql/$\{path}
+        
+        # User Service Routes
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/auth/**, /api/users/**
+
+        # H2 Console Route - Dedicated route for H2 console
+        - id: user-service-h2-console
+          uri: lb://user-service
+          predicates:
+            - Path=/user-service/h2-console/**
+          filters:
+            - RewritePath=/user-service/h2-console/(?<segment>.*), /h2-console/$\{segment}
+            - RemoveRequestHeader=X-Frame-Options
+        
+        # Direct H2 Console access - alternative path
+        - id: user-service-h2-direct
+          uri: lb://user-service
+          predicates:
+            - Path=/h2-console/**
+        
+        # Kafka UI Service Routes
+        - id: kafka-service
+          uri: lb://kafka-service
+          predicates:
+            - Path=/kafka-ui/**
+      
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+      
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            exposedHeaders: "*"
+
+# Eureka client configuration
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://discovery-service:8761/eureka/}
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    prefer-ip-address: true
+
+# Management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway
+  endpoint:
+    gateway:
+      enabled: true
+    health:
+      show-details: always
+
+# Logging
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    reactor.netty: INFO
+    root: INFO

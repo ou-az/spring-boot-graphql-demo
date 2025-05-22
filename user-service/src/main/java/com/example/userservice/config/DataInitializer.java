@@ -35,9 +35,14 @@ public class DataInitializer {
             log.info("Initializing roles data");
 
             // Create roles
-            Role userRole = roleRepository.save(new Role(null, ERole.ROLE_USER));
-            Role modRole = roleRepository.save(new Role(null, ERole.ROLE_MODERATOR));
-            Role adminRole = roleRepository.save(new Role(null, ERole.ROLE_ADMIN));
+            Role userRole = new Role(null, ERole.ROLE_USER);
+            Role modRole = new Role(null, ERole.ROLE_MODERATOR);
+            Role adminRole = new Role(null, ERole.ROLE_ADMIN);
+            
+            // Save all roles first
+            roleRepository.save(userRole);
+            roleRepository.save(modRole);
+            roleRepository.save(adminRole);
 
             log.info("Created roles: USER, MODERATOR, ADMIN");
 
@@ -47,7 +52,8 @@ public class DataInitializer {
 
                 // Regular user
                 Set<Role> userRoles = new HashSet<>();
-                userRoles.add(userRole);
+                // Use findByName to get a fresh instance from the persistence context
+                roleRepository.findByName(ERole.ROLE_USER).ifPresent(userRoles::add);
                 
                 User regularUser = User.builder()
                         .username("user")
@@ -63,9 +69,9 @@ public class DataInitializer {
 
                 // Admin user
                 Set<Role> adminRoles = new HashSet<>();
-                adminRoles.add(userRole);
-                adminRoles.add(modRole);
-                adminRoles.add(adminRole);
+                roleRepository.findByName(ERole.ROLE_USER).ifPresent(adminRoles::add);
+                roleRepository.findByName(ERole.ROLE_MODERATOR).ifPresent(adminRoles::add);
+                roleRepository.findByName(ERole.ROLE_ADMIN).ifPresent(adminRoles::add);
                 
                 User adminUser = User.builder()
                         .username("admin")

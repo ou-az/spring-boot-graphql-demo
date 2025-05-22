@@ -1,0 +1,61 @@
+type Query {
+    # Product queries
+    products: [Product!]!
+    product(id: ID!): Product
+    productsByCategory(categoryId: ID!): [Product!]!
+    
+    # Category queries
+    categories: [Category!]!
+    category(id: ID!): Category
+}
+
+type Mutation {
+    # Product mutations
+    createProduct(input: ProductInput!): Product!
+    updateProduct(id: ID!, input: ProductInput!): Product!
+    deleteProduct(id: ID!): Boolean!
+    
+    # Category mutations
+    createCategory(input: CategoryInput!): Category!
+    updateCategory(id: ID!, input: CategoryInput!): Category!
+    deleteCategory(id: ID!): Boolean!
+}
+
+type Subscription {
+    productCreated: Product!
+    productUpdated: Product!
+}
+
+type Product {
+    id: ID!
+    name: String!
+    description: String
+    price: Float!
+    stockQuantity: Int!
+    category: Category
+    createdAt: String!
+    updatedAt: String
+}
+
+type Category {
+    id: ID!
+    name: String!
+    description: String
+    products: [Product!]!
+}
+
+input ProductInput {
+    name: String!
+    description: String
+    price: Float!
+    stockQuantity: Int!
+    categoryId: ID!
+}
+
+input CategoryInput {
+    name: String!
+    description: String
+}
+
+# Directives
+directive @auth(roles: [String!]) on FIELD_DEFINITION
